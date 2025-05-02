@@ -1,0 +1,16 @@
+C:\Users\ziada\source\repos\OS\OS\bin\Debug\net8.0-windows\OS.exe
+C:\Users\ziada\source\repos\OS\OS\bin\Debug\net8.0-windows\OS.deps.json
+C:\Users\ziada\source\repos\OS\OS\bin\Debug\net8.0-windows\OS.runtimeconfig.json
+C:\Users\ziada\source\repos\OS\OS\bin\Debug\net8.0-windows\OS.dll
+C:\Users\ziada\source\repos\OS\OS\bin\Debug\net8.0-windows\OS.pdb
+C:\Users\ziada\source\repos\OS\OS\obj\Debug\net8.0-windows\OS.Form1.resources
+C:\Users\ziada\source\repos\OS\OS\obj\Debug\net8.0-windows\OS.csproj.GenerateResource.cache
+C:\Users\ziada\source\repos\OS\OS\obj\Debug\net8.0-windows\OS.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\ziada\source\repos\OS\OS\obj\Debug\net8.0-windows\OS.AssemblyInfoInputs.cache
+C:\Users\ziada\source\repos\OS\OS\obj\Debug\net8.0-windows\OS.AssemblyInfo.cs
+C:\Users\ziada\source\repos\OS\OS\obj\Debug\net8.0-windows\OS.csproj.CoreCompileInputs.cache
+C:\Users\ziada\source\repos\OS\OS\obj\Debug\net8.0-windows\OS.dll
+C:\Users\ziada\source\repos\OS\OS\obj\Debug\net8.0-windows\refint\OS.dll
+C:\Users\ziada\source\repos\OS\OS\obj\Debug\net8.0-windows\OS.pdb
+C:\Users\ziada\source\repos\OS\OS\obj\Debug\net8.0-windows\OS.genruntimeconfig.cache
+C:\Users\ziada\source\repos\OS\OS\obj\Debug\net8.0-windows\ref\OS.dll
