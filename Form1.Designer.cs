@@ -36,16 +36,7 @@
             label3 = new Label();
             label4 = new Label();
             SuspendLayout();
-            // 
-            // label1
-            // 
-            label1.AutoSize = true;
-            label1.Location = new Point(48, 38);
-            label1.Name = "label1";
-            label1.Size = new Size(151, 15);
-            label1.TabIndex = 0;
-            label1.Text = "Enter Number Of Processes";
-            label1.Click += label1_Click;
+           
             // 
             // label2
             // 
@@ -69,26 +60,8 @@
             textBox2.Name = "textBox2";
             textBox2.Size = new Size(69, 23);
             textBox2.TabIndex = 3;
-            // 
-            // button1
-            // 
-            button1.Location = new Point(48, 73);
-            button1.Name = "button1";
-            button1.Size = new Size(120, 28);
-            button1.TabIndex = 4;
-            button1.Text = "Continue";
-            button1.UseVisualStyleBackColor = true;
-            button1.Click += button1_Click;
-            // 
-            // label3
-            // 
-            label3.AutoSize = true;
-            label3.Location = new Point(95, 126);
-            label3.Name = "label3";
-            label3.Size = new Size(161, 15);
-            label3.TabIndex = 5;
-            label3.Text = "Enter Burst Times Respectivly";
-            label3.Click += label3_Click;
+            
+           
             // 
             // label4
             // 
@@ -98,24 +71,7 @@
             label4.Size = new Size(168, 15);
             label4.TabIndex = 6;
             label4.Text = "Enter Arrival Times Respectivly";
-            // 
-            // Form1
-            // 
-            AutoScaleDimensions = new SizeF(7F, 15F);
-            AutoScaleMode = AutoScaleMode.Font;
-            ClientSize = new Size(1315, 590);
-            Controls.Add(label4);
-            Controls.Add(label3);
-            Controls.Add(button1);
-            Controls.Add(textBox2);
-            Controls.Add(textBox1);
-            Controls.Add(label2);
-            Controls.Add(label1);
-            Name = "Form1";
-            Text = "Round Robin";
-            Load += Form1_Load;
-            ResumeLayout(false);
-            PerformLayout();
+            
         }
 
         #endregion

@@ -1,4 +1,4 @@
-using System;
+ï»¿using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
@@ -9,208 +9,220 @@ namespace OS
 {
     public partial class Form1 : Form
     {
-        private int x;
-        private int y;
-        private int processCount = 0;
         private List<Process> processes = new List<Process>();
         private Panel ganttChartPanel;
-        private Panel resultsPanel = new Panel();
+        private Panel resultsPanel;
+        private TableLayoutPanel inputTable;
+        private Panel inputScrollPanel;
         private List<(string Process, int Start, int Duration)> ganttData = new List<(string, int, int)>();
+        private NumericUpDown nudProcessCount, nudQuantum;
+        private Button btnCalculate;
+        private GroupBox gbInputs;
 
         public Form1()
         {
             InitializeComponent();
+            this.Text = "ðŸ•’ Round Robin Scheduler Simulator";
+            this.Font = new Font("Segoe UI", 10);
+            this.BackColor = Color.WhiteSmoke;
             this.StartPosition = FormStartPosition.CenterScreen;
-            this.AutoScroll = true;
+            this.Size = new Size(1100, 750);
 
+            // Header
+            Label lblHeader = new Label
+            {
+                Text = "Round Robin Scheduler Simulator",
+                Font = new Font("Segoe UI", 18, FontStyle.Bold),
+                ForeColor = Color.Teal,
+                AutoSize = true,
+                Location = new Point(30, 20)
+            };
+            this.Controls.Add(lblHeader);
+
+            Label lblDesc = new Label
+            {
+                Text = "Easily visualize and analyze CPU scheduling!",
+                Font = new Font("Segoe UI", 12, FontStyle.Italic),
+                ForeColor = Color.Gray,
+                AutoSize = true,
+                Location = new Point(32, 60)
+            };
+            this.Controls.Add(lblDesc);
+
+            // Input Group
+            gbInputs = new GroupBox
+            {
+                Text = "Inputs",
+                Font = new Font("Segoe UI", 11, FontStyle.Bold),
+                Size = new Size(400, 340), // Increased height for more space
+                Location = new Point(30, 100),
+                BackColor = Color.White
+            };
+            this.Controls.Add(gbInputs);
+
+            Label lblProc = new Label { Text = "Number of Processes:", Location = new Point(20, 35), AutoSize = true };
+            nudProcessCount = new NumericUpDown { Minimum = 1, Maximum = 20, Value = 3, Location = new Point(200, 32), Width = 60 };
+            gbInputs.Controls.Add(lblProc);
+            gbInputs.Controls.Add(nudProcessCount);
+
+            Label lblQuantum = new Label { Text = "Quantum:", Location = new Point(20, 75), AutoSize = true };
+            nudQuantum = new NumericUpDown { Minimum = 1, Maximum = 9, Value = 3, Location = new Point(200, 72), Width = 60 };
+            gbInputs.Controls.Add(lblQuantum);
+            gbInputs.Controls.Add(nudQuantum);
+
+            // Panel to enable scrolling for the input table
+            inputScrollPanel = new Panel
+            {
+                Location = new Point(20, 110),
+                Size = new Size(350, 160), // Shows about 4-5 rows, rest scrolls
+                AutoScroll = true,
+                BorderStyle = BorderStyle.None,
+                BackColor = Color.White
+            };
+            gbInputs.Controls.Add(inputScrollPanel);
+
+            // Table for process input
+            inputTable = new TableLayoutPanel
+            {
+                ColumnCount = 3,
+                RowCount = 1,
+                Location = new Point(0, 0),
+                Size = new Size(330, 500), // Tall enough for many rows
+                AutoSize = false,
+                AutoScroll = false,
+                BackColor = Color.White
+            };
+            inputTable.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 90));
+            inputTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+            inputTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 50));
+            inputScrollPanel.Controls.Add(inputTable);
+
+            // Button
+            btnCalculate = new Button
+            {
+                Text = "Calculate",
+                Font = new Font("Segoe UI", 11, FontStyle.Bold),
+                BackColor = Color.Teal,
+                ForeColor = Color.White,
+                FlatStyle = FlatStyle.Flat,
+                Size = new Size(120, 40),
+                Location = new Point(250, 280),
+                Cursor = Cursors.Hand
+            };
+            gbInputs.Controls.Add(btnCalculate);
+
+            btnCalculate.Click += BtnCalculate_Click;
+            nudProcessCount.ValueChanged += (s, e) => GenerateProcessInputs();
+            GenerateProcessInputs();
+
+            // Gantt Chart Panel
             ganttChartPanel = new Panel
             {
                 Name = "ganttChartPanel",
-                Size = new Size(600, 150),
-                Location = new Point(120, 500),
+                Size = new Size(900, 180),
+                Location = new Point(30, gbInputs.Bottom + 20), // Place below input box!
                 BorderStyle = BorderStyle.FixedSingle,
+                BackColor = Color.White,
                 AutoScroll = true,
                 Visible = false
             };
             this.Controls.Add(ganttChartPanel);
 
+            // Results Panel
             resultsPanel = new Panel
             {
                 Name = "resultsPanel",
-                Size = new Size(300, 300),
-                Location = new Point(650, 200),
+                Size = new Size(320, 350),
+                Location = new Point(700, 100),
                 BorderStyle = BorderStyle.FixedSingle,
+                BackColor = Color.WhiteSmoke,
                 AutoScroll = true
             };
             this.Controls.Add(resultsPanel);
         }
 
-        private void button1_Click(object sender, EventArgs e)
+        private void GenerateProcessInputs()
         {
-            if (!int.TryParse(textBox1.Text, out int processNumUserInput) ||
-                !int.TryParse(textBox2.Text, out int quantumNumUserInput))
+            inputTable.Controls.Clear();
+            int rowCount = (int)nudProcessCount.Value + 1;
+            inputTable.RowCount = rowCount;
+
+            // Header Row
+            inputTable.Controls.Add(new Label { Text = "Process", Font = new Font("Segoe UI", 10, FontStyle.Bold), AutoSize = true }, 0, 0);
+            inputTable.Controls.Add(new Label { Text = "Burst Time", Font = new Font("Segoe UI", 10, FontStyle.Bold), AutoSize = true }, 1, 0);
+            inputTable.Controls.Add(new Label { Text = "Arrival Time", Font = new Font("Segoe UI", 10, FontStyle.Bold), AutoSize = true }, 2, 0);
+
+            int rowHeight = 35;
+            inputTable.Height = rowCount * rowHeight;
+
+            for (int i = 1; i < rowCount; i++)
             {
-                MessageBox.Show("Please enter valid numbers for process count and quantum",
-                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                inputTable.Controls.Add(new Label { Text = $"P{i}", AutoSize = true, TextAlign = ContentAlignment.MiddleCenter }, 0, i);
+                inputTable.Controls.Add(new TextBox { Name = $"txtBurst{i}", Width = 60, Anchor = AnchorStyles.Left }, 1, i);
+                inputTable.Controls.Add(new TextBox { Name = $"txtArrival{i}", Width = 60, Anchor = AnchorStyles.Left }, 2, i);
+            }
+        }
+
+        private void BtnCalculate_Click(object sender, EventArgs e)
+        {
+            if (!ValidateInputs())
                 return;
-            }
 
-            processCount = processNumUserInput;
-
-            if (!ValidateProcessesInput(processNumUserInput) || !ValidateQuantum(quantumNumUserInput))
-            {
-                MessageBox.Show("Invalid inputs. Process count must be positive and quantum between 1-9",
-                    "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                return;
-            }
-
-            ClearPreviousResults();
-            GenerateProcessInputs(processNumUserInput);
-            GenerateArrivalTimeInputs(processNumUserInput);
-            GenerateButton();
-        }
-
-        private void ClearPreviousResults()
-        {
-            ganttChartPanel.Controls.Clear();
-            ganttChartPanel.Visible = false;
-            resultsPanel.Controls.Clear();
-            processes.Clear();
-            ganttData.Clear();
-
-            // Remove dynamically added controls (TextBoxes)
-            foreach (var ctrl in this.Controls.OfType<TextBox>().Where(t => t.Name.StartsWith("textBox") && t != textBox1 && t != textBox2).ToList())
-            {
-                this.Controls.Remove(ctrl);
-            }
-
-            // Remove calculate button if exists
-            var btnOld = this.Controls.Find("btnDynamic", true).FirstOrDefault();
-            if (btnOld != null)
-                this.Controls.Remove(btnOld);
-        }
-
-        private bool ValidateProcessesInput(int userInput) => userInput > 0;
-        private bool ValidateQuantum(int userInput) => userInput > 0 && userInput < 10;
-
-        private void GenerateProcessInputs(int numberOfProcesses)
-        {
-            var topInitial = 100;
-            var leftInitial = 120;
-
-            for (int i = 1; i <= numberOfProcesses; i++)
-            {
-                TextBox txt = new TextBox
-                {
-                    Top = topInitial += 50,
-                    Left = leftInitial,
-                    Name = "textBox" + (i + 2)
-                };
-                this.Controls.Add(txt);
-                this.x = txt.Top;
-                this.y = txt.Left;
-            }
-        }
-
-        private void GenerateArrivalTimeInputs(int numberOfProcesses)
-        {
-            int topInitial = 100;
-            int leftInitial = 420;
-
-            for (int i = 1; i <= numberOfProcesses; i++)
-            {
-                TextBox txt = new TextBox
-                {
-                    Top = topInitial += 50,
-                    Left = leftInitial,
-                    Name = "textBox" + (i + numberOfProcesses + 2)
-                };
-                this.Controls.Add(txt);
-            }
-        }
-
-        private void GenerateButton()
-        {
-            Button btn = new Button
-            {
-                Name = "btnDynamic",
-                Text = "Calculate",
-                Top = x + 50,
-                Left = y + 141,
-                Size = new Size(100, 40)
-            };
-
-            btn.Click += (sender, e) =>
-            {
-                if (!ValidateInputs())
-                    return;
-
-                CollectProcessData();
-                RunRoundRobinSimulation();
-            };
-
-            this.Controls.Add(btn);
+            CollectProcessData();
+            RunRoundRobinSimulation();
         }
 
         private bool ValidateInputs()
         {
-            bool inputsValid = true;
             StringBuilder errorMsg = new StringBuilder();
-
-            for (int i = 1; i <= processCount; i++)
+            bool valid = true;
+            for (int i = 1; i <= nudProcessCount.Value; i++)
             {
-                if (!ValidateTextBox($"textBox{i + 2}", $"Process {i} burst time", errorMsg, out _) ||
-                    !ValidateTextBox($"textBox{i + processCount + 2}", $"Process {i} arrival time", errorMsg, out _))
+                var burstBox = inputTable.Controls.Find($"txtBurst{i}", true).FirstOrDefault() as TextBox;
+                var arrivalBox = inputTable.Controls.Find($"txtArrival{i}", true).FirstOrDefault() as TextBox;
+                if (burstBox == null || !int.TryParse(burstBox.Text, out int burst) || burst < 0)
                 {
-                    inputsValid = false;
+                    burstBox.BackColor = Color.LightPink;
+                    errorMsg.AppendLine($"â€¢ P{i} Burst Time must be a non-negative integer");
+                    valid = false;
                 }
+                else burstBox.BackColor = Color.White;
+
+                if (arrivalBox == null || !int.TryParse(arrivalBox.Text, out int arrival) || arrival < 0)
+                {
+                    arrivalBox.BackColor = Color.LightPink;
+                    errorMsg.AppendLine($"â€¢ P{i} Arrival Time must be a non-negative integer");
+                    valid = false;
+                }
+                else arrivalBox.BackColor = Color.White;
             }
-
-            if (!inputsValid)
-            {
-                MessageBox.Show(errorMsg.ToString(), "Invalid input", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-
-            return inputsValid;
-        }
-
-        private bool ValidateTextBox(string name, string fieldName, StringBuilder errorMsg, out int value)
-        {
-            value = 0;
-            TextBox textBox = this.Controls.Find(name, true).FirstOrDefault() as TextBox;
-            if (textBox == null || !int.TryParse(textBox.Text, out value) || value < 0)
-            {
-                if (textBox != null) textBox.BackColor = Color.LightPink;
-                errorMsg.AppendLine($"• {fieldName} must be a valid non-negative integer");
-                return false;
-            }
-
-            textBox.BackColor = SystemColors.Window;
-            return true;
+            if (!valid)
+                MessageBox.Show(errorMsg.ToString(), "Input Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            return valid;
         }
 
         private void CollectProcessData()
         {
             processes.Clear();
-
-            for (int i = 1; i <= processCount; i++)
+            for (int i = 1; i <= nudProcessCount.Value; i++)
             {
-                ValidateTextBox($"textBox{i + 2}", "", new StringBuilder(), out int burstTime);
-                ValidateTextBox($"textBox{i + processCount + 2}", "", new StringBuilder(), out int arrivalTime);
-
+                var burstBox = inputTable.Controls.Find($"txtBurst{i}", true).FirstOrDefault() as TextBox;
+                var arrivalBox = inputTable.Controls.Find($"txtArrival{i}", true).FirstOrDefault() as TextBox;
+                int burst = int.Parse(burstBox.Text);
+                int arrival = int.Parse(arrivalBox.Text);
                 processes.Add(new Process
                 {
                     Name = $"P{i}",
-                    BurstTime = burstTime,
-                    ArrivalTime = arrivalTime,
-                    RemainingTime = burstTime
+                    BurstTime = burst,
+                    ArrivalTime = arrival,
+                    RemainingTime = burst
                 });
             }
         }
 
         private void RunRoundRobinSimulation()
         {
-            int quantum = int.Parse(textBox2.Text);
+            int quantum = (int)nudQuantum.Value;
             int currentTime = 0;
             Queue<Process> queue = new Queue<Process>();
             ganttData.Clear();
@@ -256,9 +268,7 @@ namespace OS
             }
 
             foreach (var p in processes)
-            {
                 p.WaitingTime = p.TurnaroundTime - p.BurstTime;
-            }
 
             DrawGanttChart();
             DisplayResults();
@@ -269,24 +279,13 @@ namespace OS
             ganttChartPanel.Controls.Clear();
             ganttChartPanel.Visible = true;
 
-            int scale = 30;
-            int blockHeight = 40;
-            int yPos = 20;
+            int scale = 35;
+            int blockHeight = 48;
+            int yPos = 30;
             int totalTime = ganttData.Last().Start + ganttData.Last().Duration;
 
-            for (int i = 0; i <= totalTime; i += Math.Max(1, totalTime / 10))
-            {
-                ganttChartPanel.Controls.Add(new Label
-                {
-                    Text = i.ToString(),
-                    Location = new Point(i * scale + 5, yPos + blockHeight + 5),
-                    AutoSize = true
-                });
-            }
-
-            Color[] colors = { Color.LightBlue, Color.LightGreen, Color.LightSalmon,
-                               Color.LightYellow, Color.LightPink, Color.LightCyan };
-
+            // Draw Gantt blocks
+            Color[] colors = { Color.LightSkyBlue, Color.LightGreen, Color.LightSalmon, Color.LightYellow, Color.LightPink, Color.LightCyan };
             for (int i = 0; i < ganttData.Count; i++)
             {
                 var item = ganttData[i];
@@ -296,17 +295,35 @@ namespace OS
                     Height = blockHeight,
                     Location = new Point(item.Start * scale, yPos),
                     BackColor = colors[i % colors.Length],
-                    BorderStyle = BorderStyle.FixedSingle
+                    BorderStyle = BorderStyle.FixedSingle,
+                    Margin = new Padding(2)
                 };
-
                 block.Controls.Add(new Label
                 {
                     Text = $"{item.Process}\n({item.Duration})",
                     TextAlign = ContentAlignment.MiddleCenter,
-                    Dock = DockStyle.Fill
+                    Dock = DockStyle.Fill,
+                    Font = new Font("Segoe UI", 10, FontStyle.Bold)
                 });
-
                 ganttChartPanel.Controls.Add(block);
+            }
+
+            // Draw time labels at every process switch point
+            var labelTimes = ganttData.Select(g => g.Start).ToList();
+            labelTimes.Add(ganttData.Last().Start + ganttData.Last().Duration);
+            labelTimes = labelTimes.Distinct().OrderBy(x => x).ToList();
+
+            foreach (var t in labelTimes)
+            {
+                ganttChartPanel.Controls.Add(new Label
+                {
+                    Text = t.ToString(),
+                    Font = new Font("Segoe UI", 10, FontStyle.Bold),
+                    ForeColor = Color.DimGray,
+                    Location = new Point(t * scale - 4, yPos + blockHeight + 8),
+                    AutoSize = true,
+                    BackColor = Color.Transparent
+                });
             }
 
             ganttChartPanel.AutoScrollMinSize = new Size(totalTime * scale + 50, 0);
@@ -319,29 +336,33 @@ namespace OS
             resultsPanel.Controls.Add(new Label
             {
                 Text = "Process Metrics",
-                Font = new Font("Arial", 10, FontStyle.Bold),
-                Location = new Point(10, 10),
+                Font = new Font("Segoe UI", 13, FontStyle.Bold),
+                ForeColor = Color.Teal,
+                Location = new Point(12, 10),
                 AutoSize = true
             });
 
-            int yPos = 40;
+            int yPos = 50;
             foreach (var p in processes.OrderBy(p => p.Name))
             {
                 resultsPanel.Controls.Add(new Label
                 {
-                    Text = $"{p.Name}: TA={p.TurnaroundTime}, WT={p.WaitingTime}, RT={p.ResponseTime}",
-                    Location = new Point(10, yPos),
+                    Text = $"{p.Name}:   Turnaround = {p.TurnaroundTime},   Waiting = {p.WaitingTime},   Response = {p.ResponseTime}",
+                    Location = new Point(12, yPos),
+                    Font = new Font("Segoe UI", 10, FontStyle.Regular),
                     AutoSize = true
                 });
-                yPos += 25;
+                yPos += 28;
             }
 
             resultsPanel.Controls.Add(new Label
             {
-                Text = $"Averages:\nTA: {processes.Average(p => p.TurnaroundTime):F2}\n" +
-                       $"WT: {processes.Average(p => p.WaitingTime):F2}\n" +
-                       $"RT: {processes.Average(p => p.ResponseTime):F2}",
-                Location = new Point(10, yPos + 10),
+                Text = $"Averages:\nTurnaround: {processes.Average(p => p.TurnaroundTime):F2}\n" +
+                       $"Waiting: {processes.Average(p => p.WaitingTime):F2}\n" +
+                       $"Response: {processes.Average(p => p.ResponseTime):F2}",
+                Location = new Point(12, yPos + 10),
+                Font = new Font("Segoe UI", 11, FontStyle.Bold),
+                ForeColor = Color.DarkSlateGray,
                 AutoSize = true
             });
         }
@@ -356,231 +377,5 @@ namespace OS
             public int ResponseTime { get; set; } = -1;
             public int TurnaroundTime { get; set; }
         }
-
-        private void Form1_Load(object sender, EventArgs e) { }
-
-        private void label3_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void label1_Click(object sender, EventArgs e)
-        {
-
-        }
     }
 }
-
-
-
-
-
-/*
- using System.Diagnostics;
-using System.Text;
-
-namespace OS
-{
-    public partial class Form1 : Form
-    {
-        private int x;
-        private int y;
-        private TextBox lastGenerated;
-        private int processCount = 0;
-
-        private List<Process> processes = new List<Process>();
-        private Panel ganttChartPanel = new Panel();
-        private Panel resultsPanel = new Panel();
-        public Form1()
-        {
-            InitializeComponent();
-            this.StartPosition = FormStartPosition.CenterScreen;
-
-            this.AutoScroll = true;
-            this.AutoSizeMode = AutoSizeMode.GrowAndShrink;
-        }
-
-        private void Form1_Load(object sender, EventArgs e)
-        {
-
-        }
-
-       
-        private void button1_Click(object sender, EventArgs e)
-        {
-            int processNumUserInput;
-            int quantumNumUserInput;
-            int.TryParse(textBox1.Text, out processNumUserInput);
-            int.TryParse(textBox2.Text, out quantumNumUserInput);
-
-            processCount = processNumUserInput;
-
-
-            if (!ValidateProcessesInput(processNumUserInput) || !ValidateQuantum(quantumNumUserInput))
-            {
-                MessageBox.Show("The inputs are invalid, Please make sure the process number is not a negative number, and the quantum is not negative," +
-                    "also consider that the maximum quantum is 10", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
-            }
-            else
-            {
-                GenerateProcessInputs(processNumUserInput);
-                GenerateArrivalTimeInputs(processNumUserInput);
-                GenerateButton();
-            }
-        }
-
-        private bool ValidateProcessesInput(int userInput)
-        {
-            return userInput > 0;
-        }
-        private bool ValidateQuantum(int userInput)
-        {
-            return userInput > 0 && userInput < 10;
-        }
-
-        private void GenerateProcessInputs(int numberOfProcesses)
-        {
-            var topInitial = 100;
-            var leftInitial = 120;
-
-            for (int i = 1; i <= numberOfProcesses; i++)
-            {
-                TextBox txt = new TextBox();
-                this.Controls.Add(txt);
-                txt.Top = topInitial += 50;
-                txt.Left = leftInitial;
-                txt.Name = "textBox" + (i+2);
-                this.x = txt.Top;
-                this.y = txt.Left;
-            }
-
-        }
-
-        private void GenerateArrivalTimeInputs(int numberOfProcesses)
-        {
-            int topInitial = 100;
-            int leftInitial = 420;
-            for (int i = 1; i <= numberOfProcesses; i++)
-            {
-                TextBox txt = new TextBox();
-                this.Controls.Add(txt);
-                txt.Top = topInitial += 50;
-                txt.Left = leftInitial;
-                txt.Name = "textBox" + (i + numberOfProcesses + 2);
-            }
-        }
-
-        private void GenerateButton()
-        {
-            Button btn = new Button();
-
-            btn.Name = "btnDynamic";
-            btn.Text = "Calculate";
-            btn.Top = x + 50;
-            btn.Left = y + 141;
-            btn.Click += (sender, e) =>
-            {
-                bool inputsValid = true;
-                StringBuilder errorMsg = new StringBuilder();
-
-                for (int i = 1; i <= processCount; i++)
-                {
-                    TextBox burstTextBox = this.Controls.Find($"textBox{i+2}", true).FirstOrDefault() as TextBox;
-                    if (burstTextBox == null || !int.TryParse(burstTextBox.Text, out int burstTime) || burstTime <= 0)
-                    {
-                        inputsValid = false;
-                        burstTextBox.BackColor = Color.LightPink; // Highlight invalid field
-                        errorMsg.AppendLine($"• Process {i}: Burst time must be a positive number");
-                    }
-                    else
-                    {
-                        burstTextBox.BackColor = SystemColors.Window; // Reset color if valid
-                    }
-
-                }
-
-                for (int i = 1; i <= processCount; i++)
-                {
-                    TextBox arrivalTextBox = this.Controls.Find($"textBox{i + processCount + 2}", true).FirstOrDefault() as TextBox;
-                    if (arrivalTextBox == null || !int.TryParse(arrivalTextBox.Text, out int arrivalTime) || arrivalTime < 0)
-                    {
-                        inputsValid = false;
-                        arrivalTextBox.BackColor = Color.LightPink;
-                        errorMsg.AppendLine($"• Process {i}: Arrival time cannot be negative");
-                    }
-                    else
-                    {
-                        arrivalTextBox.BackColor = SystemColors.Window;
-                    }
-                }
-
-                if (!inputsValid)
-                {
-                    MessageBox.Show(errorMsg.ToString(), "Invalid input", MessageBoxButtons.OK, MessageBoxIcon.Error);
-                    return;
-                }
-
-                CollectProcessData();
-
-            };
-
-            this.Controls.Add(btn);
-        }
-
-        public class Process
-        {
-            public string Name { get; set; }
-            public int BurstTime { get; set; }
-            public int ArrivalTime { get; set; }
-            public int RemainingTime { get; set; }
-            public int WaitingTime { get; set; }
-            public int ResponseTime { get; set; } = -1;
-            public int TurnaroundTime { get; set; }
-            public bool HasResponded { get; set; } = false;
-        }
-        private void CollectProcessData()
-        {
-            processes.Clear();
-            int quantum = int.Parse(textBox2.Text);
-
-            for (int i = 1; i <= processCount; i++)
-            {
-                TextBox burstTextBox = this.Controls.Find($"textBox{i + 2}", true).FirstOrDefault() as TextBox;
-                TextBox arrivalTextBox = this.Controls.Find($"textBox{i + processCount + 2}", true).FirstOrDefault() as TextBox;
-
-                processes.Add(new Process
-                {
-                    Name = $"P{i}",
-                    BurstTime = int.Parse(burstTextBox.Text),
-                    ArrivalTime = int.Parse(arrivalTextBox.Text),
-                    RemainingTime = int.Parse(burstTextBox.Text)
-                });
-            }
-        }
-        private void RunRoundRobinSimulation()
-        {
-            var quantum = int.Parse(textBox2.Text);
-            var currentTime = 0; //What is the purpose of this??
-            Queue<Process> queue = new Queue<Process>();
-            List<(string Process, int Start, int Duration)> ganttData = new List<(string, int, int)>();
-
-            foreach (var p in processes)
-            {
-                p.RemainingTime = p.BurstTime;
-                p.WaitingTime = 0;
-            }
-        }
-        private void label3_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void label1_Click(object sender, EventArgs e)
-        {
-
-        }
-
-    }
-}
-
- */
